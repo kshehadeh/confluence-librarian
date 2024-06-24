@@ -1,5 +1,8 @@
+import { ContentType } from "./api1.types";
 
-export interface PageDetails {
+export interface ContentDetails {
+    contentId: string;
+    contentType: ContentType;
     markedForArchive: boolean;
 }
 
@@ -7,13 +10,12 @@ export interface ArchiveResolverInput {
     pageId: string;
 }
 
-export interface ConfluenceProperty {
-    id: string;
-    key: string;
-    value: any;
-    version: {
-        number: number;
-        when: string;
-        message: string;
-    }
+export interface ConfluenceApiErrorResponse {
+    statusCode: number;
+    error: string;
 }
+
+export function isConfluenceApiErrorResponse(obj: any): obj is ConfluenceApiErrorResponse {
+    return obj.statusCode !== undefined && obj.error !== undefined;
+}
+

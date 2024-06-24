@@ -1,88 +1,60 @@
-import api, { route } from "@forge/api";
-import { ConfluenceProperty } from "./types";
+import { route } from "@forge/api";
+import { ConfluenceProperty } from "./api2.types";
+import { get, post, put } from "./client";
+import { ContentType } from "./api1.types";
 
-export function getErrorInfo(body: any) {
-    console.log("Error info: " + JSON.stringify(body, null, 2));
-    return body.errorMessages || body.errors || body.message || body.error || body;
-}
+export async function createProperty(contentId: string, contentType: ContentType, key: string, value: any) {
 
-export async function createProperty(pageId: string, key: string, value: any) {
-    console.log("Creating property " + key + " with " + value);
-
-    const response = await api.asApp()
-        .requestConfluence(route`/wiki/api/v2/pages/${pageId}/properties`, {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                key: key,
-                value: value
-            }),
+    if (contentType === "page") {
+        const response = await post(route`/wiki/api/v2/pages/${contentId}/properties`, {
+            key: key,
+            value: value
         });
-
-    if (!response.ok) {
-        console.log("Failed to create property: " + response.status + " " + response.statusText)
-        return false;
+        return response.ok;
     }
 
-    return true;
+    throw new Error("Unsupported content type");
 }
 
-export async function setProperty(pageId: string, key: string, value: any) {
-    console.log("Setting property " + key + " to " + value);
-
+export async function setProperty(contentId: string, contentType: ContentType, key: string, value: any) {
     // First get the property to see if it exists
-    const property = await getProperty(pageId, key);
+    const property = await getProperty(contentId, contentType, key);
     if (!property) {
-        return createProperty(pageId, key, value);
+        return createProperty(contentId, contentType, key, value);
     }
 
-    const response = await api.asApp()
-        .requestConfluence(route`/wiki/api/v2/pages/${pageId}/properties/${property.id}/`, {
-            method: 'PUT',
-            headers: {
-                'Accept': 'application/json',
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                key,
-                value,
-                version: {
-                    number: property.version.number + 1,
-                    message: "Updated property"
-                }
-            }),
+    if (contentType === 'page') {
+        const response = await put(route`/wiki/api/v2/pages/${contentId}/properties/${property.id}`, {
+            key,
+            value,
+            version: {
+                number: property.version.number + 1,
+                message: "Updated property"
+            }
         });
 
-    if (!response.ok) {
-        console.log("Failed to set property: " + response.status + " " + response.statusText + "\n" + getErrorInfo(await response.json()));
-        return false;
+        return response.ok;
     }
 
-    return true;
+    throw new Error("Unsupported content type");
 }
 
-export async function getProperty(pageId: string, key: string): Promise<ConfluenceProperty | undefined> {
-    console.log("Getting property: " + key);
+export async function getProperty(contentId: string, contentType: ContentType, key: string): Promise<ConfluenceProperty | undefined> {
 
-    const response = await api.asApp()
-        .requestConfluence(route`/wiki/api/v2/pages/${pageId}/properties`, {
-            headers: {
-                'Accept': 'application/json'
-            }
-        })
+    let properties: ConfluenceProperty[] = [];
+    if (contentType === 'page') {
+        const response = await get(route`/wiki/api/v2/pages/${contentId}/properties`)
+        if (!response.ok) {
+            return undefined;
+        }    
 
-    if (!response.ok) {
-        const errorInfo = await response.json();
-        console.log("Failed to fetch properties: " + response.status + " " + response.statusText + " " + JSON.stringify(errorInfo, null, 2));
-        return undefined;
+        properties = (await response.json())?.results as ConfluenceProperty[];
+    } else {
+        throw new Error("Unsupported content type");
     }
 
-    const properties = await response.json() as { results: ConfluenceProperty[] };
-
-    const property = properties.results.find((property: any) => property.key === key);
-
-    return property
+    if (properties) {
+        const property = properties.find((property: any) => property.key === key);
+        return property    
+    }
 }

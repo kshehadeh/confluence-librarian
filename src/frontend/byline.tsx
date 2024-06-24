@@ -6,25 +6,32 @@ import ForgeReconciler, {
 } from "@forge/react";
 import { invoke } from "@forge/bridge";
 import { useProductContext } from "@forge/react";
-import { PageDetails } from "../lib/types";
+import { ContentDetails } from "../lib/types";
 
 const App = () => {
-    const context = useProductContext();
-    const [data, setData] = useState<PageDetails | null>(null);
+    const context = useProductContext();    
+    const [data, setData] = useState<ContentDetails | null>(null);
+
+    const contentId = context?.extension.content.id;
+    const contentType = context?.extension.content.type;
 
     useEffect(() => {
-        invoke<PageDetails>("getPageDetails", {
-            pageId: context?.extension.content.id,
+        if (!context?.extension.content.id) return;
+
+        invoke<ContentDetails>("getPageDetails", {
+            contentId,
+            contentType
         }).then(setData);
-    }, []);
+    }, [context?.extension.content.id]);
 
     const handleMarking = (mark: boolean) => {
         console.log(context?.extension);
         invoke("markForArchive", {
-            pageId: context?.extension.content.id,
+            contentId,
+            contentType,
             mark,
         }).then(() => {
-            setData({ markedForArchive: mark });
+            setData({ contentId, contentType, markedForArchive: mark });
         });
     };
 
