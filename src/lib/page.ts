@@ -1,11 +1,23 @@
-import api, { route } from '@forge/api'
+import { route } from '@forge/api'
 import { ConfluenceApiErrorResponse } from './types';
 import { CqlQueryResponse } from './api1.types';
 import { LabelDetails } from './api2.types';
 import { del, get, getErrorInfo, post } from './client';
 
-export async function searchWithCql(cql: string, start: number, limit: number) {
-    const response = await get(route`/wiki/rest/api/content/search?cql=${cql}&start=${start}&limit=${limit}&expand=space,version,metadata.properties.markedForArchive`);
+export async function searchWithCql(cql: string, limit: number, cursor: string, isPrevCursor?: boolean) {
+    const params = new URLSearchParams();
+    params.append('cql', cql);
+    params.append('limit', limit.toString());
+    params.append('expand', 'space,version,metadata.properties.markedForArchive')
+    if (cursor) {
+        params.append('cursor', cursor);
+    }    
+    if (isPrevCursor) {
+        params.append('prev', 'true');
+    }
+
+    console.log(cursor);
+    const response = await get(route`/wiki/rest/api/content/search?${params}`);
 
     const body = await response.json();
     if (!response.ok) {

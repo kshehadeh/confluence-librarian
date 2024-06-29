@@ -77,6 +77,8 @@ export interface Links {
     webui: string
     self: string
     editui: string
+    next: string
+    prev: string
 }
 
 export interface MacroRenderedOutput { }

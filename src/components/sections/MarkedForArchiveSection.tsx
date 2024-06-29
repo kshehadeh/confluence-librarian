@@ -15,8 +15,8 @@ export function MarkedForArchiveSection() {
             }}
         >
             <Stack space="space.300" grow="fill">
-                <Heading as="h2">Content Marked For Archive</Heading>
-                <ContentTable cql={`label = '${LABEL_MARKED_FOR_ARCHIVE}'`} />
+                <Heading as="h2">Staged Content</Heading>
+                <ContentTable cql={`label = '${LABEL_MARKED_FOR_ARCHIVE}'`} limit={100} />
             </Stack>
         </Box>
     );

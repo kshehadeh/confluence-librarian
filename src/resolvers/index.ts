@@ -2,6 +2,7 @@ import Resolver from "@forge/resolver";
 import { getProperty, setProperty } from "../lib/properties";
 import { addLabelToContent, getLabelDetails, removeLabelFromContent, searchWithCql } from "../lib/page";
 import { LABEL_MARKED_FOR_ARCHIVE, PROPERTY_MARKED_FOR_ARCHIVE } from "../lib/const";
+import { getSpaces } from "../lib/spaces";
 
 const resolver = new Resolver();
 
@@ -39,7 +40,11 @@ resolver.define('getLabelDetails', async (req) => {
 })
 
 resolver.define('searchWithCql', async (req) => {
-    return searchWithCql(req.payload.cql, req.payload.start, req.payload.limit);
+    return searchWithCql(req.payload.cql, req.payload.limit, req.payload.cursor, req.payload.isPrevCursor);
+});
+
+resolver.define('getSpaces', async () => {
+    return getSpaces();
 });
 
 export const handler = resolver.getDefinitions();

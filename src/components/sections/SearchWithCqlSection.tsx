@@ -1,19 +1,23 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
     Box,
     Button,
     Form,
     Heading,
     Inline,
+    Select,
     Stack,
     Textfield,
 } from "@forge/react";
 import { ContentTable, ContentTableLoadingState } from "../shared/ContentTable";
+import { getKeyValue, storeKeyValue } from "../../lib/storage";
 
 export function SearchWithCqlSection() {
     const [cql, setCql] = React.useState<string>("");
     const [finalCql, setFinalCql] = React.useState<string>("");
-    const [loadingState, setLoadingState] = React.useState<ContentTableLoadingState>("success");
+    const [loadingState, setLoadingState] =
+        React.useState<ContentTableLoadingState>("success");
+    const [recentCql, setRecentCql] = React.useState<string[]>([]);
 
     const onChange = (value: string) => {
         setCql(value);
@@ -23,9 +27,40 @@ export function SearchWithCqlSection() {
         setFinalCql(cql);
     };
 
-    const onSearchStateChange = (state: ContentTableLoadingState) => {
+    const onSearchStateChange = (
+        state: ContentTableLoadingState,
+        cql: string,
+    ) => {
         setLoadingState(state);
-    }
+
+        if (state === "success") {
+            addToRecentCqlQueries(cql);
+        }
+    };
+
+    const addToRecentCqlQueries = React.useCallback(
+        (cql: string) => {
+            if (!recentCql.includes(cql)) {
+                const newList = [...recentCql, cql];
+                storeKeyValue("recentCql", newList);
+                setRecentCql([...recentCql, cql]);
+            }
+        },
+        [recentCql],
+    );
+
+    React.useEffect(() => {
+        if (finalCql && !recentCql.includes(finalCql)) {
+            setRecentCql([...recentCql, finalCql]);
+        }
+    }, [finalCql]);
+
+    useEffect(() => {
+        const recents = getKeyValue("recentCql");
+        if (recents) {
+            setRecentCql(recents);
+        }
+    }, []);
 
     return (
         <Box
@@ -46,17 +81,39 @@ export function SearchWithCqlSection() {
                             isMonospaced={true}
                             placeholder="Enter CQL query here"
                             name="cql"
-                            width={400}
+                            width={"50%"}
                             value={cql}
                             onChange={(e) => onChange((e.target as any).value)}
+                            elemAfterInput={
+                                <Button
+                                    type="submit"
+                                    isDisabled={loadingState === "loading"}
+                                >
+                                    {loadingState === "loading"
+                                        ? "Searching..."
+                                        : "Search"}
+                                </Button>
+                            }
                         />
-                        <Button type="submit" isDisabled={loadingState === 'loading'}>
-                            {loadingState === 'loading' ? "Searching..." : "Search"}
-                        </Button>
                     </Inline>
                 </Form>
 
-                <ContentTable cql={finalCql} onSearchStateChange={onSearchStateChange} />
+                <ContentTable
+                    cql={finalCql}
+                    onSearchStateChange={onSearchStateChange}
+                    columns={["title", "space", "staged"]}
+                />
+
+                <Select
+                    name="recentCql"
+                    onChange={(v) => setCql(v.value)}
+                    value={cql}
+                    placeholder="Recent"
+                    appearance="default"
+                    options={recentCql.map((v) => {
+                        return { label: v, value: v };
+                    })}
+                />
             </Stack>
         </Box>
     );
