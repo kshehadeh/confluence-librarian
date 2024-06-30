@@ -16,7 +16,6 @@ export async function searchWithCql(cql: string, limit: number, cursor: string, 
         params.append('prev', 'true');
     }
 
-    console.log(cursor);
     const response = await get(route`/wiki/rest/api/content/search?${params}`);
 
     const body = await response.json();
@@ -29,6 +28,15 @@ export async function searchWithCql(cql: string, limit: number, cursor: string, 
     }
 
     return (body as CqlQueryResponse)
+}
+
+export async function getContentById(contentId: string) {
+    const response = await get(route`/wiki/rest/api/content/${contentId}`);
+    if (!response.ok) {
+        return undefined
+    }
+
+    return await response.json();
 }
 
 export async function getLabelDetails(label: string) {

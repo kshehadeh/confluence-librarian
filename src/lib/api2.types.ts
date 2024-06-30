@@ -101,7 +101,7 @@ export interface Links {
 
 export interface Properties {
     results: Result2[]
-    meta: Meta2
+    meta: Meta
     _links: Links2
 }
 
@@ -113,18 +113,13 @@ export interface Result2 {
 
 export interface Version2 { }
 
-export interface Meta2 {
-    hasMore: boolean
-    cursor: string
-}
-
 export interface Links2 {
     self: string
 }
 
 export interface Operations {
     results: Result3[]
-    meta: Meta3
+    meta: Meta
     _links: Links3
 }
 
@@ -133,38 +128,28 @@ export interface Result3 {
     targetType: string
 }
 
-export interface Meta3 {
-    hasMore: boolean
-    cursor: string
-}
-
 export interface Links3 {
     self: string
 }
 
 export interface Likes {
     results: Result4[]
-    meta: Meta4
-    _links: Links4
+    meta: Meta
+    _links: Links
 }
 
 export interface Result4 {
     accountId: string
 }
 
-export interface Meta4 {
-    hasMore: boolean
-    cursor: string
-}
-
-export interface Links4 {
+export interface Links {
     self: string
 }
 
 export interface Versions {
     results: Result5[]
-    meta: Meta5
-    _links: Links5
+    meta: Meta
+    _links: Links
 }
 
 export interface Result5 {
@@ -175,13 +160,51 @@ export interface Result5 {
     authorId: string
 }
 
-export interface Meta5 {
+export interface Meta {
     hasMore: boolean
     cursor: string
 }
 
-export interface Links5 {
-    self: string
+export interface SpaceResponse {
+    results: Space[]    
+    _links: Links
+}
+
+export interface SpacePropertyResponse {
+    results: SpaceProperty[]
+    _links: Links
+}
+
+export interface SpaceProperty {
+    id: string,
+    key: string,
+    value: string
+    version: {
+        createdAt: string,
+        createdBy: string,
+        number: number,
+        message: string
+    }
+}
+
+export interface Space {
+    id: string,
+    key: string,
+    name: string,
+    type: "global" | "collaboration" | "knowledge_base" | "personal",
+    status: "archived" | "current",
+    authorId: string,
+    createdAt: string,
+    homepageId: string,
+    description: {
+        plain: unknown,
+        view: unknown
+    },
+    icon: {
+        path: string,
+        apiDownloadLink: string
+    },
+    _links: Links
 }
 
 export interface Links6 {

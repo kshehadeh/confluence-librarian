@@ -10,7 +10,7 @@ import {
     Textfield,
 } from "@forge/react";
 import { ContentTable, ContentTableLoadingState } from "../shared/ContentTable";
-import { getKeyValue, storeKeyValue } from "../../lib/storage";
+import { getKeyValue, storeKeyValue } from "../../lib/local-storage";
 
 export function SearchWithCqlSection() {
     const [cql, setCql] = React.useState<string>("");
