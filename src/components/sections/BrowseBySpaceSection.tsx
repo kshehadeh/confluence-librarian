@@ -12,7 +12,8 @@ import React, { useCallback, useEffect } from "react";
 import { ContentTable, ContentTableLoadingState } from "../shared/ContentTable";
 import { invoke } from "@forge/bridge";
 import { SpaceDescriptor } from "../../lib/types";
-import { difference, differenceBy } from "es-toolkit";
+import { differenceBy } from "es-toolkit";
+import { ResolverResponse } from "../../lib/api";
 
 export function BrowseBySpaceSection() {
     const [loadingState, setLoadingState] =
@@ -27,8 +28,13 @@ export function BrowseBySpaceSection() {
     const [spaces, setSpaces] = React.useState<SpaceDescriptor[]>([]);
 
     useEffect(() => {
-        invoke<SpaceDescriptor[]>("getSpaces", {}).then((spaces) => {
-            setSpaces(spaces);
+        invoke<ResolverResponse<SpaceDescriptor[]>>("getAllSpaces", {}).then((response) => {
+            if (!response.success || !response.data) {
+                console.error(response.error);
+                return;
+            }
+
+            setSpaces(response.data);
         });
     }, []);
 

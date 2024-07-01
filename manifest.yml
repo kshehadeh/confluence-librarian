@@ -75,6 +75,8 @@ app:
             type: string
           title:
             type: string
+          spaceKey:
+            type: string
           status: 
             type: string
           contentType: 

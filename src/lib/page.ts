@@ -1,8 +1,8 @@
 import { route } from '@forge/api'
 import { ConfluenceApiErrorResponse } from './types';
 import { CqlQueryResponse } from './api1.types';
-import { LabelDetails } from './api2.types';
-import { del, get, getErrorInfo, post } from './client';
+import { Page } from './api2.types';
+import { get, getErrorInfo } from './client';
 
 export async function searchWithCql(cql: string, limit: number, cursor: string, isPrevCursor?: boolean) {
     const params = new URLSearchParams();
@@ -30,43 +30,11 @@ export async function searchWithCql(cql: string, limit: number, cursor: string, 
     return (body as CqlQueryResponse)
 }
 
-export async function getContentById(contentId: string) {
-    const response = await get(route`/wiki/rest/api/content/${contentId}`);
+export async function getPageById(contentId: string) {
+    const response = await get(route`/wiki/api/v2/pages/${contentId}`);
     if (!response.ok) {
         return undefined
     }
 
-    return await response.json();
-}
-
-export async function getLabelDetails(label: string) {
-    const response = await get(route`/wiki/rest/api/label/?name=${label}`);
-    if (!response.ok) {
-        return undefined
-    }
-    
-    return (await response.json()) as LabelDetails;    
-}
-
-export async function addLabelToContent(contentId: string, label: string) {
-    const response = await post(route`/wiki/rest/api/content/${contentId}/label`, [{
-        prefix: 'global',
-        name: label
-    }]);
-    
-    if (!response.ok) {        
-        return undefined
-    }
-
-    return response.json();    
-}
-
-export async function removeLabelFromContent(contentId: string, label: string) {
-    const response = await del(route`/wiki/rest/api/content/${contentId}/label/${label}`);
-    return response.ok;
-}
-
-export async function hasLabel(contentId: string, label: string) {
-    const response = await get(route`/wiki/api/content/${contentId}/label/${label}`);
-    return response.ok;
+    return await response.json() as Page;
 }

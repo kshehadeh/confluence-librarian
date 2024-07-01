@@ -1,11 +1,3 @@
-import { ContentType } from "./api1.types";
-
-export interface ContentDetails {
-    contentId: string;
-    contentType: ContentType;
-    markedForArchive: boolean;
-}
-
 export interface ArchiveResolverInput {
     pageId: string;
 }

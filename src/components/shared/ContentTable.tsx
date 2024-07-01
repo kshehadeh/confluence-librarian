@@ -3,7 +3,6 @@ import { CqlQueryResponse } from "../../lib/api1.types";
 import { invoke } from "@forge/bridge";
 import {
     ConfluenceApiErrorResponse,
-    ContentDetails,
     isConfluenceApiErrorResponse,
 } from "../../lib/types";
 import {
@@ -19,6 +18,9 @@ import { DateTime } from "luxon";
 import React from "react";
 import { useMarkedForArchive } from "../providers/MainPageProvider";
 import { getUrlParameter } from "../../lib/url";
+import { ResolverResponse } from "../../lib/api";
+import { ContentEntity } from "../../lib/store/content";
+import { STATUS_ACTIVE, STATUS_STAGED_FOR_ARCHIVE } from "../../lib/const";
 
 const COLUMNS = {
     title: { key: "title", label: "Title" },
@@ -62,19 +64,29 @@ export function ContentTable({
     const { recentlyUpdated, updateMarkStatus } = useMarkedForArchive();
 
     const markForArchive = useCallback(
-        ({ contentId, contentType, markedForArchive }: ContentDetails) => {
-            setItemsBeingUpdated((items) => [...items, contentId]);
-            invoke("markForArchive", {
-                contentId,
-                contentType,
-                markedForArchive,
-            }).then(() => {
+        (content: ContentEntity) => {
+            setItemsBeingUpdated((items) => [...items, content.contentId]);
+            invoke<ResolverResponse<ContentEntity>>("setPageStatus", {
+                contentId: content.contentId,
+                contentType: content.contentType,
+                status: content.status,
+            }).then((response) => {
+                if (!response.success || !response.data) {
+                    console.error(response.error);
+                    return;
+                }
+
                 updateMarkStatus([
-                    { contentId, contentType, markedForArchive },
+                    { 
+                        contentId: response.data.contentId, 
+                        contentType: response.data.contentType,
+                        title: response.data.title,
+                        status: response.data.status,
+                    },
                 ]);
 
                 setItemsBeingUpdated((items) =>
-                    items.filter((item) => item !== contentId),
+                    items.filter((item) => item !== content.contentId),
                 );
             });
         },
@@ -127,7 +139,7 @@ export function ContentTable({
                                 properties: {
                                     ...page.metadata?.properties,
                                     markedForArchive: {
-                                        value: updated.markedForArchive as any,
+                                        value: updated.status === STATUS_STAGED_FOR_ARCHIVE ? "true" : "false",
                                         id: page.metadata?.properties
                                             ?.markedForArchive?.id,
                                         key: page.metadata?.properties
@@ -241,8 +253,8 @@ export function ContentTable({
                                         markForArchive({
                                             contentId: page.id,
                                             contentType: page.type,
-                                            markedForArchive:
-                                                !!e.target.checked,
+                                            title: page.title,
+                                            status: e.target.checked ? STATUS_STAGED_FOR_ARCHIVE : STATUS_ACTIVE,
                                         })
                                     }
                                 />

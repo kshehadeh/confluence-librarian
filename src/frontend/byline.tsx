@@ -6,11 +6,14 @@ import ForgeReconciler, {
 } from "@forge/react";
 import { invoke } from "@forge/bridge";
 import { useProductContext } from "@forge/react";
-import { ContentDetails } from "../lib/types";
+import { STATUS_ACTIVE, STATUS_STAGED_FOR_ARCHIVE } from "../lib/const";
+import { ResolverResponse } from "../lib/api";
+import { ContentEntity } from "../lib/store/content";
+
 
 const App = () => {
     const context = useProductContext();    
-    const [data, setData] = useState<ContentDetails | null>(null);
+    const [data, setData] = useState<ContentEntity | null>(null);
 
     const contentId = context?.extension.content.id;
     const contentType = context?.extension.content.type;
@@ -18,20 +21,27 @@ const App = () => {
     useEffect(() => {
         if (!context?.extension.content.id) return;
 
-        invoke<ContentDetails>("getPageDetails", {
+        invoke<ResolverResponse<ContentEntity>>("getPage", {
             contentId,
             contentType
-        }).then(setData);
+        }).then((result) => {
+            if (!result.success || !result.data) {
+                return console.error(result.error);
+            }
+
+            setData(result.data)
+        });
     }, [context?.extension.content.id]);
 
-    const handleMarking = (mark: boolean) => {
-        console.log(context?.extension);
-        invoke("markForArchive", {
+    const handleMarking = (mark: boolean) => {        
+        invoke<ResolverResponse<ContentEntity>>("setPageStatus", {
             contentId,
             contentType,
-            mark,
-        }).then(() => {
-            setData({ contentId, contentType, markedForArchive: mark });
+            status: mark ? STATUS_STAGED_FOR_ARCHIVE : STATUS_ACTIVE,
+        }).then((result: ResolverResponse<ContentEntity>) => {
+            if (result.success && result.data) {
+                setData(result.data);
+            }            
         });
     };
 
@@ -42,8 +52,8 @@ const App = () => {
             <Toggle
                 id="markForArchive"
                 size="large"
-                isChecked={data.markedForArchive}
-                onChange={() => handleMarking(!data.markedForArchive)}
+                isChecked={data.status === STATUS_STAGED_FOR_ARCHIVE}
+                onChange={() => handleMarking(data.status !== STATUS_STAGED_FOR_ARCHIVE)}
             />
             <Label labelFor="markForArchive">Marked For Archive</Label>
         </>

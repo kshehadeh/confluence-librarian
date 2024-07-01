@@ -1,14 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import ForgeReconciler, {
-    Heading,
-    Text,
-    DynamicTable,
     Box,
     Stack,
     Inline,
 } from "@forge/react";
-import { invoke } from "@forge/bridge";
-import { LabelDetails } from "../lib/api2.types";
 import { SearchWithCqlSection } from "../components/sections/SearchWithCqlSection";
 import { MarkedForArchiveSection } from "../components/sections/MarkedForArchiveSection";
 import { MarkedForArchiveProvider } from "../components/providers/MainPageProvider";
@@ -18,7 +13,7 @@ const App = () => {
     return (
         <MarkedForArchiveProvider>
             <Inline space="space.400">
-                <Box xcss={{ width: "60%" }}>
+                <Box>
                     <Box
                         xcss={{
                             borderWidth: "border.width",

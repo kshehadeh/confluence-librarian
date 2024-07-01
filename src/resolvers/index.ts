@@ -1,105 +1,136 @@
 import Resolver from "@forge/resolver";
-import { getProperty, setProperty } from "../lib/properties";
-import { getContentById, addLabelToContent, getLabelDetails, removeLabelFromContent, searchWithCql } from "../lib/page";
-import { LABEL_MARKED_FOR_ARCHIVE, PROPERTY_MARKED_FOR_ARCHIVE, STATUS_ACTIVE, STATUS_STAGED_FOR_ARCHIVE } from "../lib/const";
-import { getSpaceByKey, getSpaceProperty, getSpaces, setSpaceProperty } from "../lib/spaces";
-import { setContent, setSpace } from "../lib/forge-storage";
+import { getPageById, searchWithCql } from "../lib/page";
+import { STATUS_ACTIVE } from "../lib/const";
+import { getSpaceById, getSpaceByKey, getSpaces } from "../lib/spaces";
+import { SpaceEntity, SpaceStore } from "../lib/store/space";
+import { ContentEntity, ContentStore } from "../lib/store/content";
+import { error, success } from "../lib/api";
+import { isConfluenceApiErrorResponse, SpaceDescriptor } from "../lib/types";
 
 const resolver = new Resolver();
 
-resolver.define("getPageDetails", async (req) => {
+resolver.define("getPage", async (req) => {
     const contentId = req.payload.contentId;
     const contentType = req.payload.contentType;
 
-    const prop = await getProperty(contentId, contentType, PROPERTY_MARKED_FOR_ARCHIVE);
-    return {
-        contentId,
-        contentType,
-        markedForArchive: prop?.value || false,
-    };
+    const page = await getPageById(contentId);
+    if (!page) {
+        return error(`Unable to find content with ID ${contentId}`)
+    }
+
+    const space = await getSpaceById(page.spaceId);
+    if (!space) {
+        return error(`Unable to find space with ID ${page.spaceId}`)
+    }
+
+    let meta = await ContentStore.get(contentId)
+    if (!meta) {
+        meta = {
+            contentId,
+            contentType,
+            title: page.title,
+            status: STATUS_ACTIVE,
+            spaceId: page.spaceId,
+            spaceKey: space.key
+        }
+
+        ContentStore.set(meta);
+    }
+
+    return success<ContentEntity>(meta)
 });
 
-resolver.define('markForArchive', async (req) => {    
+resolver.define('setPageStatus', async (req) => {    
     const contentId = req.payload.contentId;
     const contentType = req.payload.contentType;
-    const markedForArchive = req.payload.markedForArchive;
-    const content = await getContentById(contentId);
-
-    if (!content) {
-        return {
-            success: false,
-        };
+    const status = req.payload.status;
+    const page = await getPageById(contentId);
+    if (!page) {
+        return error(`Unable to find content with ID ${contentId}`)        
     }
-    await setProperty(contentId, contentType, PROPERTY_MARKED_FOR_ARCHIVE, markedForArchive);
-
-    await setContent({
-        contentId,
-        contentType,
-        status: markedForArchive ? STATUS_STAGED_FOR_ARCHIVE : STATUS_ACTIVE,
-        title: content.title,
-    })
-
-    if (markedForArchive) {
-        await addLabelToContent(contentId, LABEL_MARKED_FOR_ARCHIVE);
-    } else {
-        await removeLabelFromContent(contentId, LABEL_MARKED_FOR_ARCHIVE);
-    }
-
-    return {
-        success: true,
-    };
-});
-
-resolver.define('getSpaceDetails', async (req) => {
-    const spaceKey = req.payload.spaceKey;
-    const space = await getSpaceByKey(spaceKey);
-    const prop = await getSpaceProperty(spaceKey, PROPERTY_MARKED_FOR_ARCHIVE);
-    return {
-        id: space?.id,
-        key: space?.key,
-        name: space?.name,
-        markedForArchive: prop?.value || false,
-    };
-})
-
-resolver.define('getSpacesMarkedForArchive', async (req) => {
     
-})
+    const space = await getSpaceById(page.spaceId);
+    if (!space) {
+        return error(`Unable to find space with ID ${page.spaceId}`)
+    }
 
-resolver.define('getLabelDetails', async (req) => {
-    return getLabelDetails(LABEL_MARKED_FOR_ARCHIVE);    
-})
+    const newContentEntity = {
+        contentId,
+        contentType,
+        title: page.title,
+        spaceId: page.spaceId,
+        spaceKey: space.key,
+        status,
+    }
 
-resolver.define('searchWithCql', async (req) => {
-    return searchWithCql(req.payload.cql, req.payload.limit, req.payload.cursor, req.payload.isPrevCursor);
+    await ContentStore.set(newContentEntity)
+
+    return success<ContentEntity>(newContentEntity);
 });
 
-resolver.define('getSpaces', async () => {
-    return getSpaces();
+resolver.define('getPagesWithStatus', async (req) => {
+    const pages = await ContentStore.getByStatus(req.payload.status);
+    return success<ContentEntity[]>(pages);
 });
 
-resolver.define('markSpaceForArchive', async (req) => {
+resolver.define('getSpace', async (req) => {
     const spaceKey = req.payload.spaceKey;
-    const markedForArchive = req.payload.markedForArchive;
-
     const space = await getSpaceByKey(spaceKey);
     if (!space) {
-        return {
-            success: false,
-        };
+        return error(`Unable to find space with key ${spaceKey}`);
     }
 
-    const success = setSpace({
+    let meta = await SpaceStore.get(spaceKey);
+    if (!meta) {
+        meta = {
+            key: space.key,
+            spaceId: space.id,
+            title: space.name,
+            status: STATUS_ACTIVE
+        }
+
+        SpaceStore.set(meta);
+    }
+    
+    return success<SpaceEntity>(meta);
+})
+
+resolver.define('setSpaceStatus', async (req) => {
+    const spaceKey = req.payload.spaceKey;
+    const status = req.payload.status;
+    const space = await getSpaceByKey(spaceKey);
+    if (!space) {
+        return error(`Unable to find space with key ${spaceKey}`);
+    }
+
+    const newSpaceEntity = {
         key: space.key,
         spaceId: space.id,
         title: space.name,
-        status: markedForArchive ? STATUS_STAGED_FOR_ARCHIVE : STATUS_ACTIVE,
-    })
-    // const success = await setSpaceProperty(spaceKey, PROPERTY_MARKED_FOR_ARCHIVE, markedForArchive);
+        status,
+    }
 
-    return {
-        success,
-    };
+    await SpaceStore.set(newSpaceEntity)
+
+    return success<SpaceEntity>(newSpaceEntity);
+})
+
+resolver.define('getSpacesWithStatus', async (req) => {
+    const spaces = await SpaceStore.getByStatus(req.payload.status);    
+    return success<SpaceEntity[]>(spaces);
+})
+
+resolver.define('getAllSpaces', async (req) => {
+    const spaces = await getSpaces();
+    return success<SpaceDescriptor[]>(spaces);
+})
+
+resolver.define('searchWithCql', async (req) => {
+    const content = await searchWithCql(req.payload.cql, req.payload.limit, req.payload.cursor, req.payload.isPrevCursor);
+    if (isConfluenceApiErrorResponse(content)) {
+        return error(content.error);
+    }
+    return success(content.results);
 });
 
 export const handler = resolver.getDefinitions();

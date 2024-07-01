@@ -1,15 +1,11 @@
 import React, { createContext, useContext, useState } from "react";
-import { ContentDetails } from "../../lib/types";
 import { ContentType } from "../../lib/api1.types";
+import { ContentEntity } from "../../lib/store/content";
 
 
 interface MarkedForArchiveContextType {
-    updateMarkStatus: (content: ContentDetails[]) => void;    
-    recentlyUpdated: {
-        contentId: string
-        contentType: ContentType
-        markedForArchive: boolean
-    }[]
+    updateMarkStatus: (content: ContentEntity[]) => void;    
+    recentlyUpdated: ContentEntity[]
 }
 
 const MarkedForArchiveContext = createContext<MarkedForArchiveContextType>({
@@ -22,9 +18,9 @@ export const useMarkedForArchive = () => {
 }
 
 export function MarkedForArchiveProvider({ children }: { children: React.ReactNode }) {
-    const [recentlyUpdated, setRecentlyUpdated] = useState<ContentDetails[]>([]);
+    const [recentlyUpdated, setRecentlyUpdated] = useState<ContentEntity[]>([]);
 
-    const updateMarkStatus = (content: ContentDetails[]) => {                
+    const updateMarkStatus = (content: ContentEntity[]) => {                
         setRecentlyUpdated(content);
     }
 
